@@ -1,5 +1,4 @@
 import LinkAnalysisVisualization from '../Graph/LinkAnalysisVisualization';
-import Test from '../Graph/Test';
 import { ResizablePanel, ResizablePanelGroup } from '../ui/resizable';
 
 const RootLayout = () => {
@@ -18,8 +17,8 @@ const RootLayout = () => {
 
                 <ResizablePanel defaultSize={80}>
                     <div className="h-full p-4">
-                        {/* <LinkAnalysisVisualization /> */}
-                        <Test />
+                        <LinkAnalysisVisualization />
+                        {/* <Test /> */}
                     </div>
                 </ResizablePanel>
             </ResizablePanelGroup>

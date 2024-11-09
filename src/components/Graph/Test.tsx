@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 function Test() {
     const [data, setData] = useState([]);
@@ -13,8 +13,8 @@ function Test() {
     return (
         <div>
             <h1>Data from Neo4j</h1>
-            <ul>
-                {JSON.stringify(data)}
+            <ul className='text-red-600 text-lg font-mono'>
+                {data.length === 0 ? "Nothing in here": JSON.stringify(data)}
             </ul>
         </div>
     );
