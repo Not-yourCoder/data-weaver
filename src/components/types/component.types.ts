@@ -24,20 +24,34 @@ export type LocationProperties = {
   postcode: string;
 };
 
+export type PersonProperties = {
+  nhs_no: string;
+  surname: string;
+  name: string;
+  id: {
+    low: number;
+    high: number;
+  };
+};
+export type Person = {
+  id: string;
+  label: string;
+  properties: NodeProperties;
+};
 export type NodeProperties =
   | CrimeProperties
   | OfficerProperties
-  | LocationProperties;
+  | LocationProperties
+  | PersonProperties;
 
 export type NodeTypes = {
   id: string;
   index: number;
-  label: "Crime" | "Officer" | "Location";
+  label: "Crime" | "Officer" | "Location" | "Person";
   properties: NodeProperties;
   type: string;
   vx: number;
   vy: number;
   x: number;
   y: number;
-  __indexColor: string;
 };

@@ -5,8 +5,6 @@ import driver from "./config/neo4j.config.js";
 import graphRoutes from "./routes/graphRoutes.js";
 
 
-
-
 const app = express();
 
 const port = process.env.PORT;
@@ -23,8 +21,8 @@ app.get("/api/graph", async (req, res) => {
     // Cypher query optimized for link analysis
     const result = await session.run(`
       MATCH (n)
-      WITH n LIMIT 100  // Get first 500 nodes
-      MATCH (n)-[r]->(m)  // Get their relationships
+      WITH n LIMIT 200 
+      MATCH (n)-[r]->(m)
       RETURN DISTINCT 
         n AS source,
         r AS relationship,

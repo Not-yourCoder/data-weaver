@@ -1,6 +1,6 @@
 import React from 'react'
-import NodeBadge from './SidePanel/NodeBadge'
-import LinkBadges from './SidePanel/LinkBadges'
+import NodeBadge from './NodeBadge'
+import LinkBadges from './LinkBadges'
 
 
 const SidePanel = ({ setData }) => {

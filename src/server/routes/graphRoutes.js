@@ -17,5 +17,5 @@ router.get("/fetch-links", getRelationships);
 // Post Routes
 router.post("/fetch-nodes", postGraphNodes);
 router.post("/search-query", searchNode);
-router.post("/post-link", getNodesByRelationship);
+router.post("/fetch-relationships", getNodesByRelationship);
 export default router;

@@ -4,7 +4,7 @@ export const getGraphData = async (req, res) => {
   const session = driver.session();
 
   try {
-    const result = await session.run("MATCH (n) RETURN n LIMIT 2000");
+    const result = await session.run("MATCH (n) RETURN n LIMIT 1000");
     const records = result.records.map((record) => record.get(0).properties);
     res.json(records);
   } catch (error) {
@@ -31,22 +31,18 @@ export const postGraphNodes = async (req, res) => {
     } else {
       // Otherwise, get nodes by the specific label
       query = `
-      MATCH (n:${label})-[r]->(m:${label})
-      RETURN n, r, m LIMIT 200
+      MATCH (n:${label}) RETURN n LIMIT 1000
     `;
     }
     const result = await session.run(query);
 
     // Extract nodes and relationships from the result
     const nodesMap = new Map();
-    const links = [];
 
     if (label !== "Show All") {
       result.records.forEach((record) => {
         // Get source and target nodes
         const sourceNode = record.get("n");
-        const targetNode = record.get("m");
-        const relationship = record.get("r");
 
         // Add source node if not already added
         if (!nodesMap.has(sourceNode.elementId)) {
@@ -56,24 +52,6 @@ export const postGraphNodes = async (req, res) => {
             properties: sourceNode.properties,
           });
         }
-
-        // Add target node if not already added
-        if (!nodesMap.has(targetNode.elementId)) {
-          nodesMap.set(targetNode.elementId, {
-            id: targetNode.elementId,
-            label: label,
-            properties: targetNode.properties,
-          });
-        }
-
-        // Add relationship
-        links.push({
-          id: relationship.elementId,
-          source: sourceNode.elementId,
-          target: targetNode.elementId,
-          type: relationship.type,
-          properties: relationship.properties,
-        });
       });
     }
 
@@ -82,7 +60,7 @@ export const postGraphNodes = async (req, res) => {
     const records = result.records.map((record) => record.get(0).properties);
     return res
       .status(200)
-      .json({ nodes: label === "Show All" ? records : nodes, links });
+      .json({ nodes: label === "Show All" ? records : nodes, links: [] });
   } catch (err) {
     console.log("Error occurred while sending data", err);
     res
@@ -162,7 +140,6 @@ export const getSuggestions = async (req, res) => {
   }
 };
 
-
 export const getRelationships = async (req, res) => {
   const session = driver.session();
   try {
@@ -191,9 +168,9 @@ export const getNodesByRelationship = async (req, res) => {
   const session = driver.session();
   try {
     const query = `
-      MATCH (a)-[r:${relationshipType}]->(b)
-      RETURN a AS source, r AS relationship, b AS target
-      LIMIT 500
+      MATCH (n)-[r:${relationshipType}]->(m)
+      RETURN n, r, m
+      LIMIT 25
     `;
 
     const result = await session.run(query);
@@ -202,10 +179,18 @@ export const getNodesByRelationship = async (req, res) => {
     const nodesMap = new Map();
     const links = [];
 
+    if (result.records.length === 0) {
+      return res
+        .status(404)
+        .json({
+          error: `No nodes found with '${relationshipType}' relationship`,
+        });
+    }
+
     result.records.forEach((record) => {
-      const sourceNode = record.get("source");
-      const targetNode = record.get("target");
-      const relationship = record.get("relationship");
+      const sourceNode = record.get("n");
+      const relationship = record.get("r");
+      const targetNode = record.get("m");
 
       // Add source node if not already in map
       if (!nodesMap.has(sourceNode.elementId)) {

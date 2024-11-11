@@ -1,10 +1,11 @@
 // LinkAnalysisVisualization.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import ForceGraph2D, { ForceGraphMethods } from 'react-force-graph-2d';
-import { CrimeProperties, LocationProperties, NodeTypes, OfficerProperties } from '../types/component.types';
-import { PanelLeftOpen, PanelRightOpen, SearchIcon, SquareSquare, ZoomIn, ZoomOut } from 'lucide-react';
+import { CrimeProperties, LocationProperties, NodeTypes, OfficerProperties, PersonProperties } from '../types/component.types';
+import { PanelLeftOpen, PanelRightOpen, SquareSquare, XCircle, ZoomIn, ZoomOut } from 'lucide-react';
 import * as d3 from 'd3-force';
 import Search from '../DashboardElements/Search';
+import RealignNodes from '../DashboardElements/RealignNodes/RealignNodes';
 
 const LinkAnalysisVisualization: React.FC = ({ data }) => {
     // Refs
@@ -19,6 +20,7 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
     const [highlightLinks, setHighlightLinks] = useState<Set<string>>(new Set());
     const [lastClickTime, setLastClickTime] = useState(0);
     const [openSidebar, setOpenSidebar] = useState<boolean>(false)
+    const [isLoading, setIsLoading] = useState<boolean>(true);
 
 
     useEffect(() => {
@@ -26,16 +28,19 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
             setGraphData(data);
         }
     }, [data]);
-    console.log("Data from SidePanel", data)
+
     useEffect(() => {
         const fetchData = async () => {
             try {
+                setIsLoading(true);
                 const response = await fetch('http://localhost:6969/api/graph');
                 const data = await response.json();
                 setOriginalData(data);
-                setGraphData({ nodes: data.nodes, links: [] });
+                setGraphData({ nodes: data.nodes, links: data.links });
+                setIsLoading(false);
             } catch (error) {
                 console.error('Error fetching graph data:', error);
+                setIsLoading(false);
             }
         };
 
@@ -118,6 +123,7 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
         }
         setSelectedNode(node);
         handleNodeHover(node);
+        setOpenSidebar(true);
         setLastClickTime(currentTime);
     };
 
@@ -178,16 +184,15 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
             ctx.strokeStyle = '#ffffff'; // White border color
             ctx.stroke();
 
-            // Optional: Draw an inner red border for additional emphasis
-            ctx.lineWidth = 2; // Set inner border thickness
-            ctx.strokeStyle = node.__indexColor; // Inner border color
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = node.__indexColor;
             ctx.stroke();
         }
     };
 
     const typeInfo = graphData.nodes.reduce((acc, node) => {
-        const type = node.type || 'Unknown'; // Default to 'Unknown' if no type
-        const color = node.__indexColor || '#CCCCCC'; // Default color if no color is provided
+        const type = node.type || 'Unknown';
+        const color = node.__indexColor || '#CCCCCC';
 
         if (!acc[type]) {
             acc[type] = { count: 0, color };
@@ -238,14 +243,119 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
                         </>
                     );
                 }
+            case "Person":
+                {
+                    const personProps = node.properties as PersonProperties;
+                    return (
+                        <>
+                            <h3>Person Information</h3>
+                            <p>Name: {personProps.name} {personProps.surname}</p>
+                            <p>Id: ({personProps.id.low})</p>
+                            <p>Nhs Number: {personProps.nhs_no}</p>
+                        </>
+                    );
+                }
+            case "AREA":
+                {
+                    const areaProps = node.properties as any;
+                    return (
+                        <>
+                            <h3>Area Information</h3>
+                            <p>Area Code: {areaProps.areaCode}</p>
+                            <p>Low: ({areaProps.id.low})</p>
+                            <p>High: ({areaProps.id.high})</p>
+                        </>
+                    );
+                }
+            case "Vehicle":
+                {
+                    const vecProps = node.properties as any;
+                    return (
+                        <>
+                            <h3>Vechile Information</h3>
+                            <p>Reg Number: {vecProps.reg}</p>
+                            <p>Year: ({vecProps.year.low})</p>
+                            <p>Model: ({vecProps.model})</p>
+                            <p>Low Id: ({vecProps.id.low})</p>
+                            <p>High Id: ({vecProps.id.high})</p>
+                            <p>Manufacturer: ({vecProps.make})</p>
+                        </>
+                    );
+                }
+            case "PostCode":
+                {
+                    const pcProps = node.properties as any;
+                    return (
+                        <>
+                            <h3>PostCode Information</h3>
+                            <p>Post Code: {pcProps.code}</p>
+                            <p>Low Id: ({pcProps.id.low})</p>
+                            <p>High Id: ({pcProps.id.high})</p>
+                        </>
+                    );
+                }
+            case "PhoneCall":
+                {
+                    const phoneCallProps = node.properties as any;
+                    return (
+                        <>
+                            <h3>Phone Call Information</h3>
+                            <p>Call Date: {phoneCallProps.call_date}</p>
+                            <p>Call Time: {phoneCallProps.call_time}</p>
+                            <p>Low Id: ({phoneCallProps.id.low})</p>
+                            <p>High Id: ({phoneCallProps.id.high})</p>
+                        </>
+                    );
+                }
+            case "Phone":
+                {
+                    const phoneProps = node.properties as any;
+                    return (
+                        <>
+                            <h3>Phone Information</h3>
+                            <p>Phone Number: {phoneProps.phoneNo}</p>
+                            <p>Low Id: ({phoneProps.id.low})</p>
+                            <p>High Id: ({phoneProps.id.high})</p>
+                        </>
+                    );
+                }
+            case "Object":
+                {
+                    const objProps = node.properties as any;
+                    return (
+                        <>
+                            <h3>Object Information</h3>
+                            <p>Object Desc.: {objProps.description}</p>
+                            <p>Low Id: {objProps.id.low}</p>
+                            <p>High Id: {objProps.id.high}</p>
+                            <p>Source Id: {objProps.source_id || "N/A"}</p>
+                            <p>Type: {objProps.type}</p>
+                        </>
+                    );
+                }
+            case "Email":
+                {
+                    const emailProps = node.properties as any;
+                    return (
+                        <>
+                            <h3>Email Information</h3>
+                            <p>Email Address: {emailProps.email_address}</p>
+                            <p>Low Id: {emailProps.id.low}</p>
+                            <p>High Id: {emailProps.id.high}</p>
+
+                        </>
+                    );
+                }
 
             default:
                 return <p>Unknown Node Type</p>;
         }
     }
+
+    console.log(graphData.links)
     return (
         <div className="relative h-full border-2 rounded-lg p-4">
-            <Search className="absolute top-0 left-[25%] z-50 mt-4 w-6/12 p-2 rounded" setHighlightNodes={setHighlightNodes} setHighlightLinks={setHighlightLinks} setGraphData={setGraphData} />
+            <Search className="absolute top-0 left-[25%] z-50 mt-4 w-6/12 p-2 rounded" setGraphData={setGraphData} />
             {/* Force Graph */}
 
             <ForceGraph2D
@@ -287,16 +397,8 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
                 }}
                 onBackgroundClick={() => setSelectedNode(null)}
             />
-
-            {/* Sidebar for node details */}
-            {selectedNode && (
-                <div className="absolute right-0 top-28 w-1/4 h-fit bg-gray-100 p-4 shadow-lg overflow-auto border rounded-md ">
-                    <button onClick={() => setSelectedNode(null)} className="absolute top-2 right-2 text-lg">✖</button>
-                    {getNodeInfo(selectedNode)}
-                </div>
-            )}
             <div className='absolute top-4 flex flex-col gap-1'>
-
+                <RealignNodes className="absolute" graphData={graphData} setGraphData={setGraphData} />
                 <div className=' bg-white rounded-md hover:shadow-sm p-2 border-2 transition-all duration-200 cursor-pointer' onClick={() => {
                     if (graphData.nodes.length > 0) {
                         centerGraph();
@@ -327,20 +429,64 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
                         <PanelLeftOpen />
                     }
                 </div>
-                <div className={`absolute right-12 p-4 top-24 bg-white h-72 overflow-y-auto rounded border shadow-md transition-all duration-300 overflow-hidden w-4/12 ${openSidebar ? "translate-x-10 opacity-100" : "translate-x-0 opacity-0"
-                    }`}>
-                    <h1 className='font-semibold text-xl mb-2'>Results Overview</h1>
-                    <div className='flex flex-wrap items-center gap-1'>
-                        <span className='px-4 pb-1 text-lg bg-blue-700 text-white font-semibold rounded-full w-fit'>{graphData.nodes.length}</span>
-                        {Object.entries(typeInfo).map(([type, info]) => (
-                            <span
-                                style={{ background: info.color }}
-                                key={type}
-                                className="px-4 pb-1 text-lg text-white font-semibold rounded-full w-fit"
+                <div
+                    className={`absolute right-2 p-4 top-24 bg-white h-96 overflow-y-auto rounded border shadow-md transition-all duration-300 overflow-hidden w-4/12 ${openSidebar
+                        ? 'translate-x-[-10px] opacity-100'
+                        : 'translate-x-0 opacity-0'
+                        }`}
+                >
+                    <div className="flex items-center justify-between mb-4">
+                        <h1 className="text-2xl font-medium">Results Overview</h1>
+                        {selectedNode && (
+                            <button
+                                onClick={() => { setSelectedNode(null); setOpenSidebar(false) }}
+                                className="text-gray-500 hover:text-gray-700 focus:outline-none"
                             >
-                                {type} ({info.count})
-                            </span>
-                        ))}
+                                <XCircle size={20} />
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+
+                        {selectedNode ? (
+                            <div className="w-full">{getNodeInfo(selectedNode)}</div>
+                        ) : (
+                            <div className='flex flex-col gap-2'>
+                                <div>
+                                    <h1 className='text-xl mb-1'>Nodes <span>({graphData.nodes.length})</span></h1>
+                                    <div className='flex flex-wrap gap-2'>
+                                        {
+                                            Object.entries(typeInfo).map(([type, info]) => (
+                                                <span
+                                                    key={type}
+                                                    className={`px-4 py-0.5 text-md rounded-full w-fit text-white`}
+                                                    style={{ backgroundColor: info.color }}
+                                                >
+                                                    {type} ({info.count})
+                                                </span>
+                                            ))
+                                        }
+                                    </div>
+                                </div>
+                                <div>
+                                    <h1 className='text-xl mb-2 '>Relationships <span>({graphData.links.length})</span></h1>
+                                    <div className='flex flex-wrap gap-2'>
+                                        {
+                                            [...new Set(graphData.links.map(link => link.type))].map((type, index) => (
+                                                <span
+                                                    key={index}
+                                                    className={`px-4 py-1 text-md rounded-full w-fit bg-slate-200 text-slate-700`}
+                                                >
+                                                    {type}
+                                                </span>
+                                            ))
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        )
+
+                        }
                     </div>
                 </div>
             </div>

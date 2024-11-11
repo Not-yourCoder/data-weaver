@@ -1,12 +1,13 @@
-import './App.css'
 import RootLayout from './components/Layout/RootLayout'
+import { Provider } from 'react-redux'
+import { store } from './store/store'
 
 function App() {
 
   return (
-    <>
-      <RootLayout/>
-    </>
+    <Provider store={store}>
+      <RootLayout />
+    </Provider>
   )
 }
 
