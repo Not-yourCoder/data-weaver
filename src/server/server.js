@@ -1,33 +1,19 @@
 import express from "express";
-import neo4j from "neo4j-driver";
 import cors from "cors";
 import "dotenv/config";
+import driver from "./config/neo4j.config.js";
+import graphRoutes from "./routes/graphRoutes.js";
+
+
+
 
 const app = express();
 
 const port = process.env.PORT;
-const uri = process.env.INSTANCE_URL;
-const password = process.env.INSTANCE_PASSWORD;
-const username = process.env.INSTANCE_USERNAME;
-const driver = neo4j.driver(uri, neo4j.auth.basic(username, password));
 
 app.use(cors());
-
-// Endpoint to get nodes only
-app.get("/api/graph-data", async (req, res) => {
-  const session = driver.session();
-
-  try {
-    const result = await session.run("MATCH (n) RETURN n LIMIT 10");
-    const records = result.records.map((record) => record.get(0).properties);
-    res.json(records);
-  } catch (error) {
-    console.error("Error fetching data:", error);
-    res.status(500).send("Internal Server Error");
-  } finally {
-    await session.close();
-  }
-});
+app.use(express.json());
+app.use("/api", graphRoutes);
 
 // Endpoint to get nodes and relationships
 app.get("/api/graph", async (req, res) => {
@@ -37,7 +23,7 @@ app.get("/api/graph", async (req, res) => {
     // Cypher query optimized for link analysis
     const result = await session.run(`
       MATCH (n)
-      WITH n LIMIT 500  // Get first 100 nodes
+      WITH n LIMIT 100  // Get first 500 nodes
       MATCH (n)-[r]->(m)  // Get their relationships
       RETURN DISTINCT 
         n AS source,
@@ -106,6 +92,21 @@ app.get("/api/graph", async (req, res) => {
   }
 });
 
+app.get("/api/nodeTypes", async (req, res) => {
+  const session = driver.session();
+
+  try {
+    const result = await session.run(
+      "MATCH (n) RETURN DISTINCT labels(n) AS nodeTypes"
+    );
+    res.json(result);
+  } catch (error) {
+    console.error("Error fetching node types:", error);
+    res.status(500).send("Internal Server Error");
+  } finally {
+    await session.close();
+  }
+});
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
