@@ -7,13 +7,15 @@ import { useDispatch, useSelector } from "react-redux";
 
 type Props = {
     className?: string
+    activeTab: { id: number, label: string}
+    setActiveTab: Dispatch<SetStateAction<any>>
     searchTerm: string
     setSearchTerm: Dispatch<SetStateAction<string>>
 }
 
-const SearchOptionsPanel = ({ className, searchTerm, setSearchTerm }: Props) => {
+const SearchOptionsPanel = ({ className, activeTab, setActiveTab, searchTerm, setSearchTerm }: Props) => {
     const dispatch = useDispatch();
-    const [activeTab, setActiveTab] = useState<number>(1)
+
     const [filteredNodes, setFilteredNodes] = useState([]);
     const [filteredLinks, setFilteredLinks] = useState([]);
 
@@ -44,15 +46,15 @@ const SearchOptionsPanel = ({ className, searchTerm, setSearchTerm }: Props) => 
         }
     }, [searchTerm, nodesList, linksList]);
 
-    const handleActiveTab = (tabs) => {
-        setActiveTab(tabs.id)
+    const handleActiveTab = (tabs: { id: number; label?: string; }) => {
+        setActiveTab(tabs)
     }
 
-    const handleLinks = async (link) => {
-        const relationshipType = link._fields[0][0];
-        const result = await dispatch(fetchNodesbyLinks(relationshipType));
-        console.log(result)
-    };
+    // const handleLinks = async (link) => {
+    //     const relationshipType = link._fields[0][0];
+    //     const result = await dispatch(fetchNodesbyLinks(relationshipType));
+    //     console.log(result)
+    // };
 
     if (nodesLoading || linksLoading) {
         return (
@@ -77,7 +79,7 @@ const SearchOptionsPanel = ({ className, searchTerm, setSearchTerm }: Props) => 
                     <div
                         key={tabs.id}
                         onClick={() => handleActiveTab(tabs)}
-                        className={`flex items-center gap-1 border-2 border-slate-300 rounded-md px-2 py-1 duration-200 cursor-pointer ${activeTab === tabs.id ? 'bg-red-500 text-white' : 'bg-white'
+                        className={`flex items-center gap-1 border-2 border-slate-300 rounded-md px-2 py-1 duration-200 cursor-pointer ${activeTab.id === tabs.id ? 'bg-red-500 text-white' : 'bg-white'
                             }`}
                     >
                         {tabs.id === 1 ? <Workflow className="w-4" /> : <Link className="w-4" />}
@@ -86,18 +88,19 @@ const SearchOptionsPanel = ({ className, searchTerm, setSearchTerm }: Props) => 
                 ))}
             </div>
 
-            {(activeTab === 1 && filteredNodes.length === 0) ||
-                (activeTab === 2 && filteredLinks.length === 0) ? (
+            {(activeTab.id === 1 && filteredNodes.length === 0) ||
+                (activeTab.id === 2 && filteredLinks.length === 0) ? (
                 <div className="p-4 text-center text-slate-500">
                     No results found
                 </div>
             ) : (
                 <ul className="flex flex-col gap-2 mt-14 p-2">
-                    {activeTab === 1
+                    {activeTab.id === 1
                         ? filteredNodes.map((node, index) => (
                             <li
                                 key={index}
                                 className="p-1.5 hover:bg-slate-100 cursor-pointer rounded"
+                                onClick={() => setSearchTerm(node._fields[0][0])}
                             >
                                 {node._fields[0][0]}
                             </li>
@@ -106,7 +109,7 @@ const SearchOptionsPanel = ({ className, searchTerm, setSearchTerm }: Props) => 
                             <li
                                 key={index}
                                 className="p-1.5 hover:bg-slate-100 cursor-pointer rounded"
-                                onClick={() => handleLinks(link)}
+                                onClick={() => setSearchTerm(link)}
                             >
                                 {link}
                             </li>

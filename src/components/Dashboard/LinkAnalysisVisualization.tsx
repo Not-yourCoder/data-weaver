@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ForceGraph2D, { ForceGraphMethods } from 'react-force-graph-2d';
 import { CrimeProperties, LocationProperties, NodeTypes, OfficerProperties, PersonProperties } from '../types/component.types';
-import { PanelLeftOpen, PanelRightOpen, SquareSquare, XCircle, ZoomIn, ZoomOut } from 'lucide-react';
+import { Copy, PanelLeftOpen, PanelRightOpen, SquareSquare, XCircle, ZoomIn, ZoomOut } from 'lucide-react';
 import * as d3 from 'd3-force';
 import Search from '../DashboardElements/Search';
 import RealignNodes from '../DashboardElements/RealignNodes/RealignNodes';
@@ -189,19 +189,21 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
             ctx.stroke();
         }
     };
-
-    const typeInfo = graphData.nodes.reduce((acc, node) => {
-        const type = node.type || 'Unknown';
-        const color = node.__indexColor || '#CCCCCC';
-
-        if (!acc[type]) {
-            acc[type] = { count: 0, color };
-        }
-        acc[type].count += 1;
-        return acc;
-    }, {});
     console.log(graphData)
-    console.log(typeInfo)
+
+    const typeInfo = Array.isArray(graphData?.nodes)
+        ? graphData?.nodes.reduce((acc, node) => {
+            const type = node.type || 'Unknown';
+            const color = node.__indexColor || '#CCCCCC';
+
+            if (!acc[type]) {
+                acc[type] = { count: 0, color };
+            }
+            acc[type].count += 1;
+            return acc;
+        }, {})
+        : {};  // Return an empty object if `graphData.nodes` is not an array
+
     // Function to display node details
     function getNodeInfo(node: NodeTypes) {
         switch (node.label) {
@@ -210,7 +212,10 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
                     const crimeProps = node.properties as CrimeProperties;
                     return (
                         <>
-                            <h3>Crime Information</h3>
+                        <div className='flex items-center justify-between'>
+                            <h3 className="font-medium text-lg">Crime Information</h3>
+                            <Copy size={18}/>
+                        </div>
                             <p>Date: {crimeProps.date}</p>
                             <p>Type: {crimeProps.type}</p>
                             <p>Outcome: {crimeProps.last_outcome}</p>
@@ -223,7 +228,7 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
                     const officerProps = node.properties as OfficerProperties;
                     return (
                         <>
-                            <h3>Officer Information</h3>
+                            <h3 className="font-medium">Officer Information</h3>
                             <p>Name: {officerProps.name} {officerProps.surname}</p>
                             <p>Rank: {officerProps.rank}</p>
                             <p>Badge No: {officerProps.badge_no}</p>
@@ -236,7 +241,7 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
                     const locationProps = node.properties as LocationProperties;
                     return (
                         <>
-                            <h3>Location Information</h3>
+                            <h3 className="font-medium">Location Information</h3>
                             <p>Address: {locationProps.address}</p>
                             <p>Coordinates: ({locationProps.latitude}, {locationProps.longitude})</p>
                             <p>Postcode: {locationProps.postcode}</p>
@@ -248,7 +253,7 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
                     const personProps = node.properties as PersonProperties;
                     return (
                         <>
-                            <h3>Person Information</h3>
+                            <h3 className="font-medium">Person Information</h3>
                             <p>Name: {personProps.name} {personProps.surname}</p>
                             <p>Id: ({personProps.id.low})</p>
                             <p>Nhs Number: {personProps.nhs_no}</p>
@@ -260,7 +265,7 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
                     const areaProps = node.properties as any;
                     return (
                         <>
-                            <h3>Area Information</h3>
+                            <h3 className="font-medium">Area Information</h3>
                             <p>Area Code: {areaProps.areaCode}</p>
                             <p>Low: ({areaProps.id.low})</p>
                             <p>High: ({areaProps.id.high})</p>
@@ -272,7 +277,7 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
                     const vecProps = node.properties as any;
                     return (
                         <>
-                            <h3>Vechile Information</h3>
+                            <h3 className="font-medium">Vechile Information</h3>
                             <p>Reg Number: {vecProps.reg}</p>
                             <p>Year: ({vecProps.year.low})</p>
                             <p>Model: ({vecProps.model})</p>
@@ -287,7 +292,7 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
                     const pcProps = node.properties as any;
                     return (
                         <>
-                            <h3>PostCode Information</h3>
+                            <h3 className="font-medium">PostCode Information</h3>
                             <p>Post Code: {pcProps.code}</p>
                             <p>Low Id: ({pcProps.id.low})</p>
                             <p>High Id: ({pcProps.id.high})</p>
@@ -299,7 +304,7 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
                     const phoneCallProps = node.properties as any;
                     return (
                         <>
-                            <h3>Phone Call Information</h3>
+                            <h3 className="font-medium">Phone Call Information</h3>
                             <p>Call Date: {phoneCallProps.call_date}</p>
                             <p>Call Time: {phoneCallProps.call_time}</p>
                             <p>Low Id: ({phoneCallProps.id.low})</p>
@@ -312,7 +317,7 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
                     const phoneProps = node.properties as any;
                     return (
                         <>
-                            <h3>Phone Information</h3>
+                            <h3 className="font-medium">Phone Information</h3>
                             <p>Phone Number: {phoneProps.phoneNo}</p>
                             <p>Low Id: ({phoneProps.id.low})</p>
                             <p>High Id: ({phoneProps.id.high})</p>
@@ -324,7 +329,7 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
                     const objProps = node.properties as any;
                     return (
                         <>
-                            <h3>Object Information</h3>
+                            <h3 className="font-medium">Object Information</h3>
                             <p>Object Desc.: {objProps.description}</p>
                             <p>Low Id: {objProps.id.low}</p>
                             <p>High Id: {objProps.id.high}</p>
@@ -338,7 +343,7 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
                     const emailProps = node.properties as any;
                     return (
                         <>
-                            <h3>Email Information</h3>
+                            <h3 className="font-medium">Email Information</h3>
                             <p>Email Address: {emailProps.email_address}</p>
                             <p>Low Id: {emailProps.id.low}</p>
                             <p>High Id: {emailProps.id.high}</p>
@@ -351,8 +356,6 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
                 return <p>Unknown Node Type</p>;
         }
     }
-
-    console.log(graphData.links)
     return (
         <div className="relative h-full border-2 rounded-lg p-4">
             <Search className="absolute top-0 left-[25%] z-50 mt-4 w-6/12 p-2 rounded" setGraphData={setGraphData} />
@@ -430,13 +433,13 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
                     }
                 </div>
                 <div
-                    className={`absolute right-2 p-4 top-24 bg-white h-96 overflow-y-auto rounded border shadow-md transition-all duration-300 overflow-hidden w-4/12 ${openSidebar
+                    className={`absolute right-2 p-4 top-16 w-3/12 bg-white h-96 overflow-y-auto rounded border shadow-md transition-all duration-300 scrollbar ${openSidebar
                         ? 'translate-x-[-10px] opacity-100'
                         : 'translate-x-0 opacity-0'
                         }`}
                 >
                     <div className="flex items-center justify-between mb-4">
-                        <h1 className="text-2xl font-medium">Results Overview</h1>
+                        <h1 className="text-2xl font-medium">{selectedNode ? "Node Details" : "Results Overview"}</h1>
                         {selectedNode && (
                             <button
                                 onClick={() => { setSelectedNode(null); setOpenSidebar(false) }}
@@ -447,7 +450,6 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
                         )}
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-
                         {selectedNode ? (
                             <div className="w-full">{getNodeInfo(selectedNode)}</div>
                         ) : (
@@ -485,7 +487,6 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
                                 </div>
                             </div>
                         )
-
                         }
                     </div>
                 </div>

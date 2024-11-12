@@ -72,34 +72,80 @@ export const postGraphNodes = async (req, res) => {
 };
 
 export const searchNode = async (req, res) => {
-  const { query } = req.body;
-  console.log("Query", query);
+  const { query , label} = req.body;
+  console.log("Query:", query);
   const session = driver.session();
-
+  const cypherQuery =
+    label === "Nodes"
+      ? `MATCH (n:${query})-[r]-(m)
+      RETURN n AS source, r AS relationship, m AS target
+      LIMIT 200`
+      : `MATCH (n)-[r: ${query}]-(m)
+      RETURN n AS source, r AS relationship, m AS target
+      LIMIT 200`;
   try {
-    const result = await session.run(
-      `
-            MATCH (n:${query})-[r]-(m) 
-            RETURN n, r, m
-            `,
-      { query }
-    );
+    const result = await session.run(cypherQuery, { query });
 
     if (result.records.length === 0) {
-      return res.status(404).json({ error: "Node not found" });
+      return res.json({
+        message: "No nodes found matching the criteria",
+      });
     }
 
-    // Extract the node and relationships from the result
-    const nodes = result.records[0].get("n").properties;
-    const links = result.records.map((record) => ({
-      target: record.get("m").properties,
-      relationship: record.get("r").properties,
-    }));
+    // Create sets to store unique nodes and relationships
+   const nodesMap = new Map();
+   const links = [];
 
-    res.status(200).json({ nodes, links });
+   result.records.forEach((record) => {
+     const source = record.get("source");
+     const target = record.get("target");
+     const relationship = record.get("relationship");
+
+     // Add source node if not exists
+     if (!nodesMap.has(source.elementId)) {
+       nodesMap.set(source.elementId, {
+         id: source.elementId,
+         label: source.labels[0],
+         type: source.labels[0],
+         properties: {
+           ...source.properties,
+         },
+       });
+     }
+
+     // Add target node if not exists
+     if (!nodesMap.has(target.elementId)) {
+       nodesMap.set(target.elementId, {
+         id: target.elementId,
+         label: target.labels[0],
+         type: target.labels[0],
+         properties: {
+           ...target.properties,
+         },
+       });
+     }
+
+     // Add relationship to links
+     links.push({
+       id: relationship.elementId,
+       source: source.elementId,
+       target: target.elementId,
+       type: relationship.type,
+       properties: relationship.properties,
+     });
+   });
+
+   const nodes = Array.from(nodesMap.values());
+    res.status(200).json({
+      nodes,
+      links,
+    });
   } catch (err) {
     console.error("Error searching for node:", err);
-    res.status(500).json({ error: "Failed to retrieve data" });
+    res.status(500).json({
+      error: "Failed to retrieve data",
+      message: err.message,
+    });
   } finally {
     await session.close();
   }
@@ -180,11 +226,9 @@ export const getNodesByRelationship = async (req, res) => {
     const links = [];
 
     if (result.records.length === 0) {
-      return res
-        .status(404)
-        .json({
-          error: `No nodes found with '${relationshipType}' relationship`,
-        });
+      return res.status(404).json({
+        error: `No nodes found with '${relationshipType}' relationship`,
+      });
     }
 
     result.records.forEach((record) => {

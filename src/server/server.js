@@ -45,16 +45,14 @@ app.get("/api/graph", async (req, res) => {
       if (!nodes.has(source.elementId)) {
         nodes.set(source.elementId, {
           id: source.elementId,
-          label: record.get("sourceLabels")[0], // First label
-          type: record.get("sourceLabels")[0], // Useful for visual grouping
+          label: record.get("sourceLabels")[0],
+          type: record.get("sourceLabels")[0],
           properties: {
             ...source.properties,
-            // Add any specific properties you want to display
           },
         });
       }
 
-      // Add target node if not exists
       if (!nodes.has(target.elementId)) {
         nodes.set(target.elementId, {
           id: target.elementId,
@@ -62,7 +60,6 @@ app.get("/api/graph", async (req, res) => {
           type: record.get("targetLabels")[0],
           properties: {
             ...target.properties,
-            // Add any specific properties you want to display
           },
         });
       }
