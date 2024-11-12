@@ -44,9 +44,9 @@ const graphSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchGraphData.fulfilled, (state, action) => {
-        // console.log("Payload", action.payload)
+        console.log("Payload", action.payload)
         state.loading = false;
-        state.nodes = action.payload;
+        state.nodes = action.payload.nodes;
         state.links = action.payload.links || [];
       })
       .addCase(fetchGraphData.rejected, (state, action) => {

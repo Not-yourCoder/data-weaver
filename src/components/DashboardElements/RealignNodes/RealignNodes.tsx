@@ -1,7 +1,7 @@
 import { AlignHorizontalDistributeCenter } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-const RealignNodes = ({ graphData, setGraphData, className }) => {
+const RealignNodes = ({ graphData, setGraphData, }) => {
     const [originalPositions, setOriginalPositions] = useState({});
 
     useEffect(() => {
@@ -33,7 +33,7 @@ const RealignNodes = ({ graphData, setGraphData, className }) => {
     };
 
     return (
-        <div className={`${className} bg-white p-2 rounded-lg border hover:shadow-sm top-36`}>
+        <div className={` bg-white p-2 rounded-lg border hover:shadow-sm top-36`}>
             <button onClick={realignNodes}><AlignHorizontalDistributeCenter /></button>
         </div>
     );

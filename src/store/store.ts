@@ -4,6 +4,7 @@ import graphReducer from "./features/graphSlice";
 import nodeReducer from "./features/nodeSlice"
 import linkReducer from "./features/linkSlice";
 import searchReducer from "./features/searchSlice";
+import nodeColorsReducer from "./features/nodeColors"
 
 
 
@@ -12,7 +13,8 @@ export const store = configureStore({
     graph: graphReducer,
     nodes: nodeReducer,
     links: linkReducer,
-    search: searchReducer
+    search: searchReducer,
+    nodeColors: nodeColorsReducer
   },
 });
 

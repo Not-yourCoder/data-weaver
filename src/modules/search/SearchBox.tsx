@@ -1,11 +1,9 @@
 import { setSearchActive } from '@/store/features/searchSlice'
-import axios, { AxiosResponse } from 'axios'
-import { error } from 'console'
 import { SearchIcon } from 'lucide-react'
 import React, { useRef, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { fetchSearchResults } from './query-hooks'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 
 type Props = {
     className: string
@@ -13,51 +11,46 @@ type Props = {
     searchTerm: string
     setSearchTerm: React.Dispatch<React.SetStateAction<string>>
     setGraphData: (c: any) => void
+    setGraphLoading: any
 }
 
-const SearchBox = ({ className, activeTab, searchTerm, setSearchTerm, setGraphData }: Props) => {
+const SearchBox = ({ className, activeTab, searchTerm, setSearchTerm, setGraphData, setGraphLoading }: Props) => {
     const [errorWhileSearch, setErrorWhileSearch] = useState("")
-
     const dispatch = useDispatch();
     const inputRef = useRef<HTMLInputElement | null>(null);
     const handleFocus = () => {
         dispatch(setSearchActive(true));
     };
 
-    const { mutate, isLoading, isError, error } = useMutation({
+    const { mutate, isError } = useMutation({
         mutationFn: fetchSearchResults,
+        onMutate: () => {
+            setGraphLoading(true);
+        },
         onSuccess: async (data) => {
-            console.log("data");
             setGraphData(data);
+            setGraphLoading(false)
             setErrorWhileSearch(null);
+            dispatch(setSearchActive(false))
         },
         onError: (error) => {
             console.log("Error:", error.message);
             setErrorWhileSearch(error?.message || "An unknown error occurred");
+            setGraphLoading(false)
         }
     });
+
     const handleSearch = () => {
         if (!searchTerm.trim()) {
             setErrorWhileSearch("Search term cannot be empty");
             return;
         }
-        mutate( searchTerm, activeTab.label );
+
+        mutate({ searchTerm, label: activeTab.label });
     };
-    // useEffect(() => {
-    //     const handleClickOutside = (e: MouseEvent) => {
-    //         if (inputRef.current && !inputRef.current.contains(e.target as Node)) {
-    //             dispatch(setSearchActive(false));
-    //         }
-    //     };
-
-    //     document.addEventListener('mousedown', handleClickOutside);
-    //     return () => {
-    //         document.removeEventListener('mousedown', handleClickOutside);
-    //     };
-    // }, [dispatch]);
 
 
-   
+
     return (
         <div className={`${className} bg-white rounded-md`}>
             <div className='flex items-center gap-2'>
@@ -65,9 +58,9 @@ const SearchBox = ({ className, activeTab, searchTerm, setSearchTerm, setGraphDa
                     ref={inputRef}
                     type="text"
                     placeholder='Search Node or Relationship'
-                    className='w-full rounded-md p-3'
+                    className='w-full rounded-md p-3 focus:outline-none'
                     value={searchTerm}
-                    onChange={(e) => {setSearchTerm(e.target.value); setErrorWhileSearch("")}}
+                    onChange={(e) => { setSearchTerm(e.target.value); setErrorWhileSearch("") }}
                     onClick={handleFocus}
                 />
                 <SearchIcon
@@ -79,10 +72,7 @@ const SearchBox = ({ className, activeTab, searchTerm, setSearchTerm, setGraphDa
                 />
             </div>
             {isError &&
-                <p className='bg-transparent'>Error: {errorWhileSearch}</p>
-            }
-            {isLoading &&
-                <p className=''>Loading</p>
+                <p className=' mx-auto w-full text-red-600 p-2 mt-2'>{errorWhileSearch}</p>
             }
         </div>
     );

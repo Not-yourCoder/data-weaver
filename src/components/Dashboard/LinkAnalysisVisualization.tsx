@@ -1,13 +1,22 @@
-// LinkAnalysisVisualization.tsx
-import React, { useEffect, useRef, useState } from 'react';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import ForceGraph2D, { ForceGraphMethods } from 'react-force-graph-2d';
-import { CrimeProperties, LocationProperties, NodeTypes, OfficerProperties, PersonProperties } from '../types/component.types';
-import { Copy, PanelLeftOpen, PanelRightOpen, SquareSquare, XCircle, ZoomIn, ZoomOut } from 'lucide-react';
+import { NodeTypes, } from '../types/component.types';
+import { PanelLeftOpen, PanelRightOpen, SquareSquare, ZoomIn, ZoomOut } from 'lucide-react';
 import * as d3 from 'd3-force';
 import Search from '../DashboardElements/Search';
-import RealignNodes from '../DashboardElements/RealignNodes/RealignNodes';
+import InformationPanel from '../DashboardElements/InformationPanel/InformationPanel';
+import Loader from '../DashboardElements/Loader/Loader';
+import { getNodeColor } from '@/utils/helpers';
+import { useDispatch } from 'react-redux';
 
-const LinkAnalysisVisualization: React.FC = ({ data }) => {
+type Props = {
+    data: any
+    graphLoading: boolean
+    setGraphLoading: Dispatch<SetStateAction<boolean>>
+}
+const LinkAnalysisVisualization = ({ data, graphLoading, setGraphLoading }: Props) => {
     // Refs
     const fgRef = useRef<ForceGraphMethods<NodeTypes, any> | undefined>(undefined);
 
@@ -20,42 +29,52 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
     const [highlightLinks, setHighlightLinks] = useState<Set<string>>(new Set());
     const [lastClickTime, setLastClickTime] = useState(0);
     const [openSidebar, setOpenSidebar] = useState<boolean>(false)
-    const [isLoading, setIsLoading] = useState<boolean>(true);
 
+
+
+    // useEffect(() => {
+    //     dispatch(fetchGraphData());
+    // }, [dispatch]);
+
+
+    // useEffect(() => {
+    //     setGraphData({ nodes, links });
+    // }, [nodes, links]);
 
     useEffect(() => {
         if (data) {
             setGraphData(data);
         }
+        setOpenSidebar(false)
     }, [data]);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                setIsLoading(true);
+                setGraphLoading(true);
                 const response = await fetch('http://localhost:6969/api/graph');
                 const data = await response.json();
                 setOriginalData(data);
                 setGraphData({ nodes: data.nodes, links: data.links });
-                setIsLoading(false);
             } catch (error) {
                 console.error('Error fetching graph data:', error);
-                setIsLoading(false);
+            } finally {
+                setGraphLoading(false)
             }
         };
 
         fetchData();
-    }, []);
+    }, [setGraphLoading]);
 
     useEffect(() => {
         if (fgRef.current) {
-            const radius = 100; // Radius around each node to avoid overlap
-            const linkDistance = 400; // Distance between linked nodes
+            const radius = 100;
+            const linkDistance = 400;
 
             fgRef.current
-                .d3Force('charge', d3.forceManyBody().strength(-150)) // Increase repulsion between nodes
-                .d3Force('link', d3.forceLink().distance(linkDistance).strength(1)) // Increase link distance
-                .d3Force('collision', d3.forceCollide().radius(radius)); // Collision force to prevent overlap
+                .d3Force('charge', d3.forceManyBody().strength(-300))
+                .d3Force('link', d3.forceLink().distance(linkDistance).strength(1))
+                .d3Force('collision', d3.forceCollide().radius(radius));
         }
     }, [graphData]);
 
@@ -67,28 +86,28 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
         fg?.zoomToFit(500);
     }
 
-    const handleNodeDoubleClick = (node: NodeTypes) => {
-        const connectedLinks = originalData.links.filter(link => link.source === node.id || link.target === node.id);
-        const connectedNodeIds = new Set(connectedLinks.flatMap(link => [link.source, link.target]));
+    // const handleNodeDoubleClick = (node: NodeTypes) => {
+    //     const connectedLinks = originalData.links.filter(link => link.source === node.id || link.target === node.id);
+    //     const connectedNodeIds = new Set(connectedLinks.flatMap(link => [link.source, link.target]));
 
-        // Get connected nodes and links without duplicates
-        const newNodes = originalData.nodes.filter(n => connectedNodeIds.has(n.id) && !graphData.nodes.some(g => g.id === n.id));
-        const newLinks = connectedLinks.filter(link => !graphData.links.some(g => g.source === link.source && g.target === link.target));
+    //     // Get connected nodes and links without duplicates
+    //     const newNodes = originalData.nodes.filter(n => connectedNodeIds.has(n.id) && !graphData.nodes.some(g => g.id === n.id));
+    //     const newLinks = connectedLinks.filter(link => !graphData.links.some(g => g.source === link.source && g.target === link.target));
 
-        // Update graph data to include new nodes and links
-        setGraphData(prevData => ({
-            nodes: [...prevData.nodes, ...newNodes],
-            links: [...prevData.links, ...newLinks],
-        }));
+    //     // Update graph data to include new nodes and links
+    //     setGraphData(prevData => ({
+    //         nodes: [...prevData.nodes, ...newNodes],
+    //         links: [...prevData.links, ...newLinks],
+    //     }));
 
-        // Apply forces to bring connected nodes closer to the clicked node
-        if (fgRef.current) {
-            fgRef.current
-                .d3Force('charge', d3.forceManyBody().strength(-150))
-                .d3Force('link')
-                ?.distance(link => (connectedNodeIds.has(link.source.id) && connectedNodeIds.has(link.target.id) ? 50 : 200)); // Connected nodes closer
-        }
-    };
+    //     // Apply forces to bring connected nodes closer to the clicked node
+    //     if (fgRef.current) {
+    //         fgRef.current
+    //             .d3Force('charge', d3.forceManyBody().strength(150))
+    //             .d3Force('link')
+    //             ?.distance(link => (connectedNodeIds.has(link.source.id) && connectedNodeIds.has(link.target.id) ? 50 : 200)); // Connected nodes closer
+    //     }
+    // };
 
     const handleNodeHover = (node: NodeTypes | null) => {
         if (node) {
@@ -118,38 +137,44 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
     const handleNodeClick = (node: NodeTypes) => {
         const currentTime = Date.now()
 
-        if (currentTime - lastClickTime < 300) {
-            handleNodeDoubleClick(node)
+        // if (currentTime - lastClickTime < 250) {
+        //     handleNodeDoubleClick(node)
+        // }
+        if (fgRef.current) {
+            fgRef.current.centerAt(node.x, node.y, 1000); 
+            fgRef.current.zoom(1, 1000); 
         }
+
+        console.log(selectedNode);
         setSelectedNode(node);
         handleNodeHover(node);
         setOpenSidebar(true);
         setLastClickTime(currentTime);
     };
 
-    const getNodeSize = (node: NodeTypes) => {
-        return highlightNodes.has(node.id) || node === hoveredNode ? 72 : 60; // Enlarge on hover
-    };
-    const getNodeColor = (node: NodeTypes) => {
+    const getNodeSize = (node: any) => {
+        const crimeSeverity = node.properties ? Math.abs(node.properties.id.low - node.properties.id.high) : Math.abs(node.id.low - node.id.high);
 
-        if (node.id === selectedNode?.id) {
-            return "green";
-        }
-        return node.__indexColor;
+        const minSize = 10;
+        const maxSize = 50;
+
+        const size = Math.min(Math.max(crimeSeverity, minSize), maxSize);
+
+        return size;
     };
+
     const getLinkColor = (link: any) => {
-        return highlightLinks.has(link) ? "#ffffff" : "#999"; // White color for highlighted links
+        return highlightLinks.has(link) ? "#ffffff" : "#999";
     };
 
     const getLinkWidth = (link: any) => {
-        return highlightLinks.has(link) ? 3 : 1; // Thicker width for highlighted links
+        return highlightLinks.has(link) ? 4 : 1;
     };
     const getLinkParticleSpeed = (link: any) => {
-        return highlightLinks.has(link) ? 0.01 : 0.002; // Speed up particles on hover
+        return highlightLinks.has(link) ? 0.01 : 0.002;
     };
 
 
-    // Function to center the graph on a specific node
     const centerGraph = () => {
         if (fgRef.current) {
             fgRef.current.zoomToFit()
@@ -158,213 +183,96 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
 
     const zoomIn = () => {
         if (fgRef.current) {
-            fgRef.current.zoom(fgRef.current.zoom() * 1.1, 500); // Zoom in by 10% over 500ms
+            fgRef.current.zoom(fgRef.current.zoom() * 1.1, 500);
         }
     };
 
-    // Zoom Out by a factor of 1.1
     const zoomOut = () => {
         if (fgRef.current) {
-            fgRef.current.zoom(fgRef.current.zoom() / 1.1, 500); // Zoom out by 10% over 500ms
+            fgRef.current.zoom(fgRef.current.zoom() / 1.1, 500);
         }
     };
+
     const nodeCanvasObject = (node: NodeTypes, ctx: CanvasRenderingContext2D) => {
         const highlight = highlightNodes.has(node.id) || node === hoveredNode;
+        const selected = selectedNode?.id === node.id;
         const size = getNodeSize(node);
 
-        // Draw the node circle
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, size, 0, Math.PI * 2, false);
-        ctx.fillStyle = getNodeColor(node); // Default color
-        ctx.fill();
+        // Pulsating effect for the selected node
+        if (selected) {
+            const time = Date.now() / 500;
+            const pulseRadius = size + Math.sin(time * 2) * 20 + 10;
 
-        if (highlight) {
-            // Draw a thick white border around the node
-            ctx.lineWidth = 30; // Set border thickness
-            ctx.strokeStyle = '#ffffff'; // White border color
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, pulseRadius, 0, Math.PI * 2, false);
+            ctx.fillStyle = 'rgba(0, 255, 0, 0.4)';
+            ctx.fill();
+
+            const pulseFactor = Math.sin(Date.now() / 500) * 0.5 + 0.5;
+            const baseColor = "#00FF00";
+            const highlightColor = hexToRgb(baseColor);
+            const pulsatingColor = `rgb(${highlightColor.r * pulseFactor}, ${highlightColor.g * pulseFactor}, ${highlightColor.b * pulseFactor})`;
+
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, size, 0, Math.PI * 2, false);
+            ctx.fillStyle = pulsatingColor;
+            ctx.fill();
+        } else {
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, size, 0, Math.PI * 2, false);
+            ctx.fillStyle = getNodeColor(node) || "#ffffff";
+            ctx.fill();
+        }
+
+        if (highlight || selected) {
+            ctx.lineWidth = 12;
+            ctx.strokeStyle = '#ffffff';
             ctx.stroke();
 
             ctx.lineWidth = 2;
-            ctx.strokeStyle = node.__indexColor;
+            ctx.strokeStyle = node.__indexColor || "#ffffff";
             ctx.stroke();
         }
     };
-    console.log(graphData)
+
+    // Helper function to convert hex color to rgb format
+    function hexToRgb(hex: string): { r: number; g: number; b: number } {
+        const match = /^#([a-fA-F0-9]{6})$/.exec(hex);
+        if (!match) return { r: 0, g: 0, b: 0 };
+        const [r, g, b] = match[1].match(/.{2}/g)?.map(x => parseInt(x, 16)) || [];
+        return { r, g, b };
+    }
+
+
+
 
     const typeInfo = Array.isArray(graphData?.nodes)
-        ? graphData?.nodes.reduce((acc, node) => {
+        ? graphData?.nodes.reduce((acc: Record<string, { count: number; color: string }>, node) => {
             const type = node.type || 'Unknown';
-            const color = node.__indexColor || '#CCCCCC';
+            const color = 'red';
 
             if (!acc[type]) {
                 acc[type] = { count: 0, color };
             }
             acc[type].count += 1;
             return acc;
-        }, {})
-        : {};  // Return an empty object if `graphData.nodes` is not an array
+        }, {} as Record<string, { count: number; color: string }>)
+        : {};
 
-    // Function to display node details
-    function getNodeInfo(node: NodeTypes) {
-        switch (node.label) {
-            case "Crime":
-                {
-                    const crimeProps = node.properties as CrimeProperties;
-                    return (
-                        <>
-                        <div className='flex items-center justify-between'>
-                            <h3 className="font-medium text-lg">Crime Information</h3>
-                            <Copy size={18}/>
-                        </div>
-                            <p>Date: {crimeProps.date}</p>
-                            <p>Type: {crimeProps.type}</p>
-                            <p>Outcome: {crimeProps.last_outcome}</p>
-                        </>
-                    );
-                }
+    console.log("Graph Data", graphData)
+    console.log("Type Info", typeInfo)
 
-            case "Officer":
-                {
-                    const officerProps = node.properties as OfficerProperties;
-                    return (
-                        <>
-                            <h3 className="font-medium">Officer Information</h3>
-                            <p>Name: {officerProps.name} {officerProps.surname}</p>
-                            <p>Rank: {officerProps.rank}</p>
-                            <p>Badge No: {officerProps.badge_no}</p>
-                        </>
-                    );
-                }
-
-            case "Location":
-                {
-                    const locationProps = node.properties as LocationProperties;
-                    return (
-                        <>
-                            <h3 className="font-medium">Location Information</h3>
-                            <p>Address: {locationProps.address}</p>
-                            <p>Coordinates: ({locationProps.latitude}, {locationProps.longitude})</p>
-                            <p>Postcode: {locationProps.postcode}</p>
-                        </>
-                    );
-                }
-            case "Person":
-                {
-                    const personProps = node.properties as PersonProperties;
-                    return (
-                        <>
-                            <h3 className="font-medium">Person Information</h3>
-                            <p>Name: {personProps.name} {personProps.surname}</p>
-                            <p>Id: ({personProps.id.low})</p>
-                            <p>Nhs Number: {personProps.nhs_no}</p>
-                        </>
-                    );
-                }
-            case "AREA":
-                {
-                    const areaProps = node.properties as any;
-                    return (
-                        <>
-                            <h3 className="font-medium">Area Information</h3>
-                            <p>Area Code: {areaProps.areaCode}</p>
-                            <p>Low: ({areaProps.id.low})</p>
-                            <p>High: ({areaProps.id.high})</p>
-                        </>
-                    );
-                }
-            case "Vehicle":
-                {
-                    const vecProps = node.properties as any;
-                    return (
-                        <>
-                            <h3 className="font-medium">Vechile Information</h3>
-                            <p>Reg Number: {vecProps.reg}</p>
-                            <p>Year: ({vecProps.year.low})</p>
-                            <p>Model: ({vecProps.model})</p>
-                            <p>Low Id: ({vecProps.id.low})</p>
-                            <p>High Id: ({vecProps.id.high})</p>
-                            <p>Manufacturer: ({vecProps.make})</p>
-                        </>
-                    );
-                }
-            case "PostCode":
-                {
-                    const pcProps = node.properties as any;
-                    return (
-                        <>
-                            <h3 className="font-medium">PostCode Information</h3>
-                            <p>Post Code: {pcProps.code}</p>
-                            <p>Low Id: ({pcProps.id.low})</p>
-                            <p>High Id: ({pcProps.id.high})</p>
-                        </>
-                    );
-                }
-            case "PhoneCall":
-                {
-                    const phoneCallProps = node.properties as any;
-                    return (
-                        <>
-                            <h3 className="font-medium">Phone Call Information</h3>
-                            <p>Call Date: {phoneCallProps.call_date}</p>
-                            <p>Call Time: {phoneCallProps.call_time}</p>
-                            <p>Low Id: ({phoneCallProps.id.low})</p>
-                            <p>High Id: ({phoneCallProps.id.high})</p>
-                        </>
-                    );
-                }
-            case "Phone":
-                {
-                    const phoneProps = node.properties as any;
-                    return (
-                        <>
-                            <h3 className="font-medium">Phone Information</h3>
-                            <p>Phone Number: {phoneProps.phoneNo}</p>
-                            <p>Low Id: ({phoneProps.id.low})</p>
-                            <p>High Id: ({phoneProps.id.high})</p>
-                        </>
-                    );
-                }
-            case "Object":
-                {
-                    const objProps = node.properties as any;
-                    return (
-                        <>
-                            <h3 className="font-medium">Object Information</h3>
-                            <p>Object Desc.: {objProps.description}</p>
-                            <p>Low Id: {objProps.id.low}</p>
-                            <p>High Id: {objProps.id.high}</p>
-                            <p>Source Id: {objProps.source_id || "N/A"}</p>
-                            <p>Type: {objProps.type}</p>
-                        </>
-                    );
-                }
-            case "Email":
-                {
-                    const emailProps = node.properties as any;
-                    return (
-                        <>
-                            <h3 className="font-medium">Email Information</h3>
-                            <p>Email Address: {emailProps.email_address}</p>
-                            <p>Low Id: {emailProps.id.low}</p>
-                            <p>High Id: {emailProps.id.high}</p>
-
-                        </>
-                    );
-                }
-
-            default:
-                return <p>Unknown Node Type</p>;
-        }
-    }
+    if (graphLoading) return <Loader />
     return (
         <div className="relative h-full border-2 rounded-lg p-4">
-            <Search className="absolute top-0 left-[25%] z-50 mt-4 w-6/12 p-2 rounded" setGraphData={setGraphData} />
+            <Search className="absolute top-0 left-[25%] z-50 mt-4 w-6/12 p-2 rounded" setGraphData={setGraphData} setGraphLoading={setGraphLoading} />
             {/* Force Graph */}
 
             <ForceGraph2D
                 ref={fgRef}
                 graphData={graphData}
-                // backgroundColor='rgba(0,0,0,0.5)'
+                width={1620}
+                height={900}
                 nodeLabel={(node) => node.label}
                 nodeColor={getNodeColor}
                 linkWidth={(link) => getLinkWidth(link)}
@@ -383,7 +291,7 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
                 nodeCanvasObject={nodeCanvasObject}
                 nodePointerAreaPaint={(node, color, ctx) => {
                     // Define a larger area for hover detection
-                    const size = getNodeSize(node);
+                    const size = getNodeSize(node) || 60;
                     ctx.fillStyle = color;
                     ctx.beginPath();
                     ctx.arc(node.x, node.y, size + 5, 0, 2 * Math.PI, false);
@@ -401,7 +309,7 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
                 onBackgroundClick={() => setSelectedNode(null)}
             />
             <div className='absolute top-4 flex flex-col gap-1'>
-                <RealignNodes className="absolute" graphData={graphData} setGraphData={setGraphData} />
+                {/* <RealignNodes graphData={graphData} setGraphData={setGraphData} /> */}
                 <div className=' bg-white rounded-md hover:shadow-sm p-2 border-2 transition-all duration-200 cursor-pointer' onClick={() => {
                     if (graphData.nodes.length > 0) {
                         centerGraph();
@@ -415,14 +323,15 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
                 <div className=' bg-white rounded-md hover:shadow-sm p-2 border-2 transition-all duration-200 cursor-pointer' onClick={zoomOut}>
                     <ZoomOut />
                 </div>
+                {/* <div className=' bg-white rounded-md hover:shadow-sm p-2 border-2 transition-all duration-200 cursor-pointer'>
+                    <Home />
+                </div> */}
             </div>
             <div className='absolute left-10 bottom-10 bg-white p-2 rounded text-xs'>
                 <p className='font-semibold'>Left Click: <span className='font-normal'>
                     Show node information</span></p>
-                <p className='font-semibold'>Double Click: <span className='font-normal'>
-                    Show connected links and nodes</span></p>
-                <p className='font-semibold'>Right Click: <span className='font-normal'>
-                    Nothing as of now</span></p>
+                <p className='font-semibold'>Note: <span className='font-normal'>
+                    Node sizes indicate their level of importance.</span></p>
             </div>
             <div className='flex border'>
                 <div className='absolute right-5 top-5 p-2 bg-white rounded border hover:cursor-pointer' onClick={handleSidebarOpen}>
@@ -433,62 +342,49 @@ const LinkAnalysisVisualization: React.FC = ({ data }) => {
                     }
                 </div>
                 <div
-                    className={`absolute right-2 p-4 top-16 w-3/12 bg-white h-96 overflow-y-auto rounded border shadow-md transition-all duration-300 scrollbar ${openSidebar
+                    className={`absolute right-2 p-4 top-16 w-3/12 bg-white h-[25rem] rounded border shadow-md ${openSidebar ? "" : "pointer-events-none"} transition-all duration-300 scrollbar ${openSidebar
                         ? 'translate-x-[-10px] opacity-100'
                         : 'translate-x-0 opacity-0'
                         }`}
                 >
-                    <div className="flex items-center justify-between mb-4">
-                        <h1 className="text-2xl font-medium">{selectedNode ? "Node Details" : "Results Overview"}</h1>
-                        {selectedNode && (
-                            <button
-                                onClick={() => { setSelectedNode(null); setOpenSidebar(false) }}
-                                className="text-gray-500 hover:text-gray-700 focus:outline-none"
-                            >
-                                <XCircle size={20} />
-                            </button>
-                        )}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                        {selectedNode ? (
-                            <div className="w-full">{getNodeInfo(selectedNode)}</div>
-                        ) : (
-                            <div className='flex flex-col gap-2'>
-                                <div>
-                                    <h1 className='text-xl mb-1'>Nodes <span>({graphData.nodes.length})</span></h1>
-                                    <div className='flex flex-wrap gap-2'>
+                    {selectedNode ? (
+                        <InformationPanel node={selectedNode} properties={selectedNode.properties} title={selectedNode.label} />
+                    ) : (
+                        <div className='flex flex-col gap-2 max-h-full p-2 overflow-auto scrollbar'>
+                            <div>
+                                <h1 className='text-xl mb-1'>Nodes <span>({graphData.nodes.length})</span></h1>
+                                <div className='flex flex-wrap gap-2'>
                                         {
-                                            Object.entries(typeInfo).map(([type, info]) => (
-                                                <span
-                                                    key={type}
-                                                    className={`px-4 py-0.5 text-md rounded-full w-fit text-white`}
-                                                    style={{ backgroundColor: info.color }}
-                                                >
-                                                    {type} ({info.count})
-                                                </span>
-                                            ))
-                                        }
-                                    </div>
-                                </div>
-                                <div>
-                                    <h1 className='text-xl mb-2 '>Relationships <span>({graphData.links.length})</span></h1>
-                                    <div className='flex flex-wrap gap-2'>
-                                        {
-                                            [...new Set(graphData.links.map(link => link.type))].map((type, index) => (
+                                            [...new Set(graphData.nodes.map(node => node.label))].map((label, index) => (
                                                 <span
                                                     key={index}
-                                                    className={`px-4 py-1 text-md rounded-full w-fit bg-slate-200 text-slate-700`}
+                                                    style={{ backgroundColor: getNodeColor({ label: label }) }}
+                                                    className="text-white hover:bg-slate-300 font-medium w-fit px-2.5 py-1 transition-all duration-300 hover:shadow-sm rounded-full hover:cursor-pointer hover:text-slate-900"
                                                 >
-                                                    {type}
+                                                    {label}
                                                 </span>
                                             ))
                                         }
-                                    </div>
                                 </div>
                             </div>
-                        )
-                        }
-                    </div>
+                            <div>
+                                <h1 className='text-xl mb-2 '>Relationships <span>({graphData.links.length})</span></h1>
+                                <div className='flex flex-wrap gap-2'>
+                                    {
+                                        [...new Set(graphData.links.map(link => link.type))].map((type, index) => (
+                                            <span
+                                                key={index}
+                                                className="bg-slate-200 text-slate-700 hover:bg-slate-300 font-medium w-fit px-2.5 py-1 transition-all duration-300 hover:shadow-sm rounded-full hover:cursor-pointer hover:text-slate-900"
+                                            >
+                                                {type}
+                                            </span>
+                                        ))
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    )
+                    }
                 </div>
             </div>
         </div >

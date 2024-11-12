@@ -4,12 +4,70 @@ export const getGraphData = async (req, res) => {
   const session = driver.session();
 
   try {
-    const result = await session.run("MATCH (n) RETURN n LIMIT 1000");
-    const records = result.records.map((record) => record.get(0).properties);
-    res.json(records);
+    // Cypher query optimized for link analysis
+    const result = await session.run(`
+      MATCH (n)
+      WITH n LIMIT 1000 
+      MATCH (n)-[r]->(m)
+      RETURN DISTINCT 
+        n AS source,
+        r AS relationship,
+        m AS target,
+        labels(n) AS sourceLabels,
+        labels(m) AS targetLabels,
+        type(r) AS relationshipType
+    `);
+
+    // Format for visualization
+    const nodes = new Map();
+    const links = [];
+
+    result.records.forEach((record) => {
+      const source = record.get("source");
+      const target = record.get("target");
+      const relationship = record.get("relationship");
+
+      // Add source node if not exists
+      if (!nodes.has(source.elementId)) {
+        nodes.set(source.elementId, {
+          id: source.elementId,
+          label: record.get("sourceLabels")[0],
+          type: record.get("sourceLabels")[0],
+          properties: {
+            ...source.properties,
+          },
+        });
+      }
+
+      if (!nodes.has(target.elementId)) {
+        nodes.set(target.elementId, {
+          id: target.elementId,
+          label: record.get("targetLabels")[0],
+          type: record.get("targetLabels")[0],
+          properties: {
+            ...target.properties,
+          },
+        });
+      }
+
+      // Add relationship
+      links.push({
+        id: relationship.elementId,
+        source: source.elementId,
+        target: target.elementId,
+        type: record.get("relationshipType"),
+        properties: relationship.properties,
+      });
+    });
+
+    // Return formatted data
+    res.status(200).json({
+      nodes: Array.from(nodes.values()),
+      links: links,
+    });
   } catch (error) {
-    console.error("Error fetching data:", error);
-    res.status(500).send("Internal Server Error");
+    console.error("Error fetching graph data:", error);
+    res.status(500).json({ message: "Error fetching graph data", error });
   } finally {
     await session.close();
   }
@@ -26,25 +84,20 @@ export const postGraphNodes = async (req, res) => {
   try {
     let query;
     if (label === "Show All") {
-      // Query to match all nodes with their labels
       query = "MATCH (n) RETURN n LIMIT 1000";
     } else {
-      // Otherwise, get nodes by the specific label
       query = `
       MATCH (n:${label}) RETURN n LIMIT 1000
     `;
     }
     const result = await session.run(query);
 
-    // Extract nodes and relationships from the result
     const nodesMap = new Map();
 
     if (label !== "Show All") {
       result.records.forEach((record) => {
-        // Get source and target nodes
         const sourceNode = record.get("n");
 
-        // Add source node if not already added
         if (!nodesMap.has(sourceNode.elementId)) {
           nodesMap.set(sourceNode.elementId, {
             id: sourceNode.elementId,
@@ -55,7 +108,6 @@ export const postGraphNodes = async (req, res) => {
       });
     }
 
-    // Convert the nodes map to an array
     const nodes = Array.from(nodesMap.values());
     const records = result.records.map((record) => record.get(0).properties);
     return res
@@ -72,17 +124,35 @@ export const postGraphNodes = async (req, res) => {
 };
 
 export const searchNode = async (req, res) => {
-  const { query , label} = req.body;
-  console.log("Query:", query);
+  const { query, label } = req.body;
   const session = driver.session();
+  // const cypherQuery =
+  //   label === "Nodes"
+  //     ? `MATCH (n:${query})-[r]-(m)
+  //     RETURN n AS source, r AS relationship, m AS target
+  //     LIMIT 200`
+  //     : `MATCH (n)-[r: ${query}]-(m)
+  //     RETURN n AS source, r AS relationship, m AS target
+  //     LIMIT 1000`;
+
   const cypherQuery =
     label === "Nodes"
-      ? `MATCH (n:${query})-[r]-(m)
-      RETURN n AS source, r AS relationship, m AS target
-      LIMIT 200`
-      : `MATCH (n)-[r: ${query}]-(m)
-      RETURN n AS source, r AS relationship, m AS target
-      LIMIT 200`;
+      ? `MATCH (n)
+       WHERE ANY(label IN labels(n) WHERE label CONTAINS $query) 
+          OR ANY(key IN keys(n) WHERE n[key] CONTAINS $query)
+       OPTIONAL MATCH (n)-[r]-(m)
+       RETURN n AS source, r AS relationship, m AS target
+       LIMIT 1000`
+      : label === "Relationships"
+      ? `MATCH (n)-[r]-(m)
+       WHERE type(r) CONTAINS $query 
+          OR ANY(key IN keys(r) WHERE r[key] CONTAINS $query)
+       RETURN n AS source, r AS relationship, m AS target
+       LIMIT 1000`
+      : `MATCH (n { ${property}: $query })
+       OPTIONAL MATCH (n)-[r]-(m)
+       RETURN n AS source, r AS relationship, m AS target
+       LIMIT 1000`;
   try {
     const result = await session.run(cypherQuery, { query });
 
@@ -92,50 +162,46 @@ export const searchNode = async (req, res) => {
       });
     }
 
-    // Create sets to store unique nodes and relationships
-   const nodesMap = new Map();
-   const links = [];
+    const nodesMap = new Map();
+    const links = [];
 
-   result.records.forEach((record) => {
-     const source = record.get("source");
-     const target = record.get("target");
-     const relationship = record.get("relationship");
+    result.records.forEach((record) => {
+      const source = record.get("source");
+      const target = record.get("target");
+      const relationship = record.get("relationship");
 
-     // Add source node if not exists
-     if (!nodesMap.has(source.elementId)) {
-       nodesMap.set(source.elementId, {
-         id: source.elementId,
-         label: source.labels[0],
-         type: source.labels[0],
-         properties: {
-           ...source.properties,
-         },
-       });
-     }
+      if (!nodesMap.has(source.elementId)) {
+        nodesMap.set(source.elementId, {
+          id: source.elementId,
+          label: source.labels[0],
+          type: source.labels[0],
+          properties: {
+            ...source.properties,
+          },
+        });
+      }
 
-     // Add target node if not exists
-     if (!nodesMap.has(target.elementId)) {
-       nodesMap.set(target.elementId, {
-         id: target.elementId,
-         label: target.labels[0],
-         type: target.labels[0],
-         properties: {
-           ...target.properties,
-         },
-       });
-     }
+      if (!nodesMap.has(target.elementId)) {
+        nodesMap.set(target.elementId, {
+          id: target.elementId,
+          label: target.labels[0],
+          type: target.labels[0],
+          properties: {
+            ...target.properties,
+          },
+        });
+      }
 
-     // Add relationship to links
-     links.push({
-       id: relationship.elementId,
-       source: source.elementId,
-       target: target.elementId,
-       type: relationship.type,
-       properties: relationship.properties,
-     });
-   });
+      links.push({
+        id: relationship.elementId,
+        source: source.elementId,
+        target: target.elementId,
+        type: relationship.type,
+        properties: relationship.properties,
+      });
+    });
 
-   const nodes = Array.from(nodesMap.values());
+    const nodes = Array.from(nodesMap.values());
     res.status(200).json({
       nodes,
       links,
@@ -151,40 +217,38 @@ export const searchNode = async (req, res) => {
   }
 };
 
-export const getSuggestions = async (req, res) => {
-  const { q } = req.query;
+// export const getSuggestions = async (req, res) => {
+//   const { q } = req.query;
 
-  if (!q) {
-    return res.status(400).json({ error: 'Query parameter "q" is required' });
-  }
+//   if (!q) {
+//     return res.status(400).json({ error: 'Query parameter "q" is required' });
+//   }
 
-  const session = driver.session();
-  try {
-    const result = await session.run(
-      `
-      MATCH (n) 
-      WHERE ANY(label IN labels(n) WHERE label STARTS WITH $query) 
-        OR ANY(key IN keys(n) WHERE toString(n[key]) STARTS WITH $query)
-      RETURN DISTINCT n LIMIT 10
-      `,
-      { query: q }
-    );
+//   const session = driver.session();
+//   try {
+//     const result = await session.run(
+//       `
+//       MATCH (n)
+//       WHERE ANY(label IN labels(n) WHERE label STARTS WITH $query)
+//         OR ANY(key IN keys(n) WHERE toString(n[key]) STARTS WITH $query)
+//       RETURN DISTINCT n LIMIT 10
+//       `,
+//       { query: q }
+//     );
 
-    // Extract and format suggestions for the frontend
-    const suggestions = result.records.map((record) => {
-      const node = record.get("n");
-      // Return either the primary label or a property, adjust as needed
-      return node.labels[0] || node.properties.name || node.properties.title;
-    });
+//     const suggestions = result.records.map((record) => {
+//       const node = record.get("n");
+//       return node.labels[0] || node.properties.name || node.properties.title;
+//     });
 
-    res.status(200).json(suggestions);
-  } catch (err) {
-    console.error("Error fetching search suggestions:", err);
-    res.status(500).json({ error: "Failed to fetch search suggestions" });
-  } finally {
-    await session.close();
-  }
-};
+//     res.status(200).json(suggestions);
+//   } catch (err) {
+//     console.error("Error fetching search suggestions:", err);
+//     res.status(500).json({ error: "Failed to fetch search suggestions" });
+//   } finally {
+//     await session.close();
+//   }
+// };
 
 export const getRelationships = async (req, res) => {
   const session = driver.session();
@@ -192,7 +256,6 @@ export const getRelationships = async (req, res) => {
     const query = "CALL db.relationshipTypes()";
     const result = await session.run(query);
 
-    // Extract relationship types from the result
     const relationshipTypes = result.records.map((record) => record.get(0));
 
     return res.status(200).json({ relationshipTypes });
@@ -216,7 +279,7 @@ export const getNodesByRelationship = async (req, res) => {
     const query = `
       MATCH (n)-[r:${relationshipType}]->(m)
       RETURN n, r, m
-      LIMIT 25
+      LIMIT 1000
     `;
 
     const result = await session.run(query);

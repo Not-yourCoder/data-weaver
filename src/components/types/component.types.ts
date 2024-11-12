@@ -54,4 +54,5 @@ export type NodeTypes = {
   vy: number;
   x: number;
   y: number;
+  __indexColor?: string
 };
