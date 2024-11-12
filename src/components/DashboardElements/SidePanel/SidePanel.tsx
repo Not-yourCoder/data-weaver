@@ -1,5 +1,6 @@
 import NodeBadge from './NodeBadge'
 import LinkBadges from './LinkBadges'
+import React from 'react'
 
 
 const SidePanel = ({ setData, setGraphLoading }) => {
@@ -11,4 +12,4 @@ const SidePanel = ({ setData, setGraphLoading }) => {
     )
 }
 
-export default SidePanel
+export default React.memo(SidePanel)

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
+import React, { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import ForceGraph2D, { ForceGraphMethods } from 'react-force-graph-2d';
 import { NodeTypes, } from '../types/component.types';
 import { PanelLeftOpen, PanelRightOpen, SquareSquare, ZoomIn, ZoomOut } from 'lucide-react';
@@ -9,7 +9,7 @@ import Search from '../DashboardElements/Search';
 import InformationPanel from '../DashboardElements/InformationPanel/InformationPanel';
 import Loader from '../DashboardElements/Loader/Loader';
 import { getNodeColor } from '@/utils/helpers';
-import { useDispatch } from 'react-redux';
+import memoizeOne from 'memoize-one';
 
 type Props = {
     data: any
@@ -141,18 +141,17 @@ const LinkAnalysisVisualization = ({ data, graphLoading, setGraphLoading }: Prop
         //     handleNodeDoubleClick(node)
         // }
         if (fgRef.current) {
-            fgRef.current.centerAt(node.x, node.y, 1000); 
-            fgRef.current.zoom(1, 1000); 
+            fgRef.current.centerAt(node.x, node.y, 1000);
+            fgRef.current.zoom(1, 1000);
         }
 
-        console.log(selectedNode);
         setSelectedNode(node);
         handleNodeHover(node);
         setOpenSidebar(true);
         setLastClickTime(currentTime);
     };
 
-    const getNodeSize = (node: any) => {
+    const getNodeSize = memoizeOne((node: any) => {
         const crimeSeverity = node.properties ? Math.abs(node.properties.id.low - node.properties.id.high) : Math.abs(node.id.low - node.id.high);
 
         const minSize = 10;
@@ -161,7 +160,7 @@ const LinkAnalysisVisualization = ({ data, graphLoading, setGraphLoading }: Prop
         const size = Math.min(Math.max(crimeSeverity, minSize), maxSize);
 
         return size;
-    };
+    });
 
     const getLinkColor = (link: any) => {
         return highlightLinks.has(link) ? "#ffffff" : "#999";
@@ -193,7 +192,7 @@ const LinkAnalysisVisualization = ({ data, graphLoading, setGraphLoading }: Prop
         }
     };
 
-    const nodeCanvasObject = (node: NodeTypes, ctx: CanvasRenderingContext2D) => {
+    const nodeCanvasObject = memoizeOne((node: NodeTypes, ctx: CanvasRenderingContext2D) => {
         const highlight = highlightNodes.has(node.id) || node === hoveredNode;
         const selected = selectedNode?.id === node.id;
         const size = getNodeSize(node);
@@ -233,7 +232,7 @@ const LinkAnalysisVisualization = ({ data, graphLoading, setGraphLoading }: Prop
             ctx.strokeStyle = node.__indexColor || "#ffffff";
             ctx.stroke();
         }
-    };
+    });
 
     // Helper function to convert hex color to rgb format
     function hexToRgb(hex: string): { r: number; g: number; b: number } {
@@ -244,30 +243,10 @@ const LinkAnalysisVisualization = ({ data, graphLoading, setGraphLoading }: Prop
     }
 
 
-
-
-    const typeInfo = Array.isArray(graphData?.nodes)
-        ? graphData?.nodes.reduce((acc: Record<string, { count: number; color: string }>, node) => {
-            const type = node.type || 'Unknown';
-            const color = 'red';
-
-            if (!acc[type]) {
-                acc[type] = { count: 0, color };
-            }
-            acc[type].count += 1;
-            return acc;
-        }, {} as Record<string, { count: number; color: string }>)
-        : {};
-
-    console.log("Graph Data", graphData)
-    console.log("Type Info", typeInfo)
-
     if (graphLoading) return <Loader />
     return (
         <div className="relative h-full border-2 rounded-lg p-4">
             <Search className="absolute top-0 left-[25%] z-50 mt-4 w-6/12 p-2 rounded" setGraphData={setGraphData} setGraphLoading={setGraphLoading} />
-            {/* Force Graph */}
-
             <ForceGraph2D
                 ref={fgRef}
                 graphData={graphData}
@@ -354,17 +333,17 @@ const LinkAnalysisVisualization = ({ data, graphLoading, setGraphLoading }: Prop
                             <div>
                                 <h1 className='text-xl mb-1'>Nodes <span>({graphData.nodes.length})</span></h1>
                                 <div className='flex flex-wrap gap-2'>
-                                        {
-                                            [...new Set(graphData.nodes.map(node => node.label))].map((label, index) => (
-                                                <span
-                                                    key={index}
-                                                    style={{ backgroundColor: getNodeColor({ label: label }) }}
-                                                    className="text-white hover:bg-slate-300 font-medium w-fit px-2.5 py-1 transition-all duration-300 hover:shadow-sm rounded-full hover:cursor-pointer hover:text-slate-900"
-                                                >
-                                                    {label}
-                                                </span>
-                                            ))
-                                        }
+                                    {
+                                        [...new Set(graphData.nodes.map(node => node.label))].map((label, index) => (
+                                            <span
+                                                key={index}
+                                                style={{ backgroundColor: getNodeColor({ label: label }) }}
+                                                className="text-white hover:bg-slate-300 font-medium w-fit px-2.5 py-1 transition-all duration-300 hover:shadow-sm rounded-full hover:cursor-pointer hover:text-slate-900"
+                                            >
+                                                {label}
+                                            </span>
+                                        ))
+                                    }
                                 </div>
                             </div>
                             <div>
@@ -391,4 +370,4 @@ const LinkAnalysisVisualization = ({ data, graphLoading, setGraphLoading }: Prop
     );
 };
 
-export default LinkAnalysisVisualization;
+export default React.memo(LinkAnalysisVisualization);

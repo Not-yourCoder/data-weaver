@@ -7,7 +7,7 @@ export const getGraphData = async (req, res) => {
     // Cypher query optimized for link analysis
     const result = await session.run(`
       MATCH (n)
-      WITH n LIMIT 1000 
+      WITH n LIMIT 800 
       MATCH (n)-[r]->(m)
       RETURN DISTINCT 
         n AS source,
@@ -60,7 +60,6 @@ export const getGraphData = async (req, res) => {
       });
     });
 
-    // Return formatted data
     res.status(200).json({
       nodes: Array.from(nodes.values()),
       links: links,
