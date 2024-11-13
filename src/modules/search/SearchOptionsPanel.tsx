@@ -1,9 +1,7 @@
 import { SearchOptionsPanelTabs } from "@/constants/data"
-import { fetchAllLinks, fetchNodesbyLinks } from "@/store/features/linkSlice";
-import { fetchAllNodes } from "@/store/features/nodeSlice";
 import { Link, Workflow } from "lucide-react";
 import { Dispatch, SetStateAction, useEffect, useState } from "react"
-import { useDispatch, useSelector } from "react-redux";
+import {  useSelector } from "react-redux";
 
 type Props = {
     className?: string
@@ -14,7 +12,6 @@ type Props = {
 }
 
 const SearchOptionsPanel = ({ className, activeTab, setActiveTab, searchTerm, setSearchTerm }: Props) => {
-    const dispatch = useDispatch();
 
     const [filteredNodes, setFilteredNodes] = useState([]);
     const [filteredLinks, setFilteredLinks] = useState([]);
@@ -22,10 +19,6 @@ const SearchOptionsPanel = ({ className, activeTab, setActiveTab, searchTerm, se
     const { nodesList, loading: nodesLoading, error: nodesError } = useSelector((state: any) => state.nodes);
     const { linksList, loading: linksLoading, error: linksError } = useSelector((state: any) => state.links);
 
-    useEffect(() => {
-        dispatch(fetchAllNodes());
-        dispatch(fetchAllLinks());
-    }, [dispatch]);
 
     // Filter data whenever searchTerm changes
     useEffect(() => {

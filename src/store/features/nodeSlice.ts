@@ -1,7 +1,6 @@
 // features/nodeSlice.js
 import { getAllNodes } from "@/components/DashboardElements/query-hooks";
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
 
 const showAllNode = {
   keys: ["nodeTypes"],
@@ -18,15 +17,15 @@ export const fetchAllNodes = createAsyncThunk(
   }
 );
 
-export const fetchNodesByLabel = createAsyncThunk(
-  "nodes/fetchNodesByLabel",
-  async (label) => {
-    const response = await axios.post("http://localhost:6969/api/fetch-nodes", {
-      label,
-    });
-    return response.data;
-  }
-);
+// export const fetchNodesByLabel = createAsyncThunk(
+//   "nodes/fetchNodesByLabel",
+//   async (label) => {
+//     const response = await axios.post("http://localhost:6969/api/fetch-nodes", {
+//       label,
+//     });
+//     return response.data;
+//   }
+// );
 
 const initialState = {
   nodesList: [],
@@ -54,10 +53,10 @@ const nodeSlice = createSlice({
         state.loading = false;
         state.error = "Failed to fetch node types";
       })
-      // Handle fetchNodesByLabel
-      .addCase(fetchNodesByLabel.fulfilled, (state, action) => {
-        state.selectedNodeData = action.payload;
-      });
+      // // Handle fetchNodesByLabel
+      // .addCase(fetchNodesByLabel.fulfilled, (state, action) => {
+      //   state.selectedNodeData = action.payload;
+      // });
   },
 });
 

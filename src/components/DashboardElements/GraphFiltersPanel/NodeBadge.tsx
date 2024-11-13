@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from "react-redux"
 import { fetchAllNodes } from "@/store/features/nodeSlice"
 import SkeletonLoader from "../Loader/Skeleton"
 import { getNodeColor } from "@/utils/helpers"
+import { RootState } from "@/store/store"
 
 type Props = {
     setData: (data: any) => void
@@ -12,11 +13,10 @@ type Props = {
 
 const NodeBadge = ({ setData, setGraphLoading }: Props) => {
     const dispatch = useDispatch()
-    const { nodesList, loading, error } = useSelector((state) => state.nodes)
     const [localLoading, setLocalLoading] = useState(false)
+    const { nodesList, loading, error } = useSelector((state: RootState) => state.nodes)
 
     useEffect(() => {
-        // Only fetch if nodesList is empty
         if (!nodesList.length) {
             dispatch(fetchAllNodes())
         }

@@ -24,17 +24,14 @@ const LinkAnalysisVisualization = ({ data, graphLoading, setGraphLoading }: Prop
 
     // States
     const [graphData, setGraphData] = useState<{ nodes: NodeTypes[], links: any[] }>({ nodes: [], links: [] });
-    const [originalData, setOriginalData] = useState<{ nodes: NodeTypes[], links: any[] }>({ nodes: [], links: [] });
+    const [_, setOriginalData] = useState<{ nodes: NodeTypes[], links: any[] }>({ nodes: [], links: [] });
     const [hoveredNode, setHoveredNode] = useState<NodeTypes | null>(null);
     const [selectedNode, setSelectedNode] = useState<NodeTypes | null>(null);
     const [highlightNodes, setHighlightNodes] = useState<Set<string>>(new Set());
     const [highlightLinks, setHighlightLinks] = useState<Set<string>>(new Set());
-    const [lastClickTime, setLastClickTime] = useState(0);
+    const [__, setLastClickTime] = useState(0);
     const [openSidebar, setOpenSidebar] = useState<boolean>(true)
-
-
-
-
+    
     // useEffect(() => {
     //     dispatch(fetchGraphData());
     // }, [dispatch]);
