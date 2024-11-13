@@ -13,6 +13,7 @@ type Props = {
 
 const NodeBadge = ({ setData, setGraphLoading }: Props) => {
     const dispatch = useDispatch()
+    const [currentlyActiveNode, setCurrentlyActiveNode] = useState<string>("Show All");
     const [localLoading, setLocalLoading] = useState(false)
     const { nodesList, loading, error } = useSelector((state: RootState) => state.nodes)
 
@@ -29,6 +30,7 @@ const NodeBadge = ({ setData, setGraphLoading }: Props) => {
 
         try {
             const response = await axios.post("http://localhost:6969/api/fetch-nodes", { label })
+            setCurrentlyActiveNode(label)
             setData(response.data)
         } catch (err) {
             console.error("Error occurred:", err)
@@ -47,6 +49,7 @@ const NodeBadge = ({ setData, setGraphLoading }: Props) => {
     if (loading) return <SkeletonLoader />
     if (error) return <div>{error}</div>
 
+    console.log(currentlyActiveNode)
     return (
         <div>
             <h2 className="text-xl mb-3">Nodes ({nodesList.length})</h2>
@@ -57,12 +60,14 @@ const NodeBadge = ({ setData, setGraphLoading }: Props) => {
                         style={{
                             backgroundColor: getNodeColor({ label: node._fields[0][0] }),
                             opacity: localLoading ? 0.5 : 1,
-                            pointerEvents: localLoading ? 'none' : 'auto'
+                            pointerEvents: localLoading ? 'none' : 'auto',
                         }}
-                        className="w-fit px-2.5 py-1 font-medium text-slate-100 rounded-full hover:cursor-pointer hover:text-white hover:shadow-sm duration-300"
+                        className=" flex items-center w-fit px-2.5 py-1 font-medium text-slate-100 rounded-full hover:cursor-pointer hover:text-white hover:shadow-sm duration-300"
                         onClick={() => !localLoading && handleNodes(node)}
                     >
-                        {node._fields[0][0]}
+                        {node._fields[0][0]}{currentlyActiveNode === node._fields[0][0] && (
+                            <span className="text-green-500 ml-2">✔️</span> // or any other icon you prefer
+                        )}
                     </li>
                 ))}
             </ul>
