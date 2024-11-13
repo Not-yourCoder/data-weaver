@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import LinkAnalysisVisualization from '../Dashboard/LinkAnalysisVisualization';
 import { ResizablePanel, ResizablePanelGroup } from '../ui/resizable';
-import SidePanel from '../DashboardElements/SidePanel/SidePanel';
+import SidePanel from '../DashboardElements/GraphFiltersPanel/SidePanel';
 
 const RootLayout = () => {
     const [data, setData] = useState();

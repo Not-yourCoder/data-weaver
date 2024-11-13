@@ -30,3 +30,10 @@ export const getNodeColor = (node: NodeTypes) => {
             return "orange";     // Default color
     }
 };
+
+
+export const centerGraph = (fgRef) => {
+  if (fgRef.current) {
+    fgRef.current.zoomToFit();
+  }
+};

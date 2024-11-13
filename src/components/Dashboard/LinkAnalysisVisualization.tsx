@@ -3,13 +3,15 @@
 import React, { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import ForceGraph2D, { ForceGraphMethods } from 'react-force-graph-2d';
 import { NodeTypes, } from '../types/component.types';
-import { PanelLeftOpen, PanelRightOpen, SquareSquare, ZoomIn, ZoomOut } from 'lucide-react';
+import { PanelLeftOpen, PanelRightOpen } from 'lucide-react';
 import * as d3 from 'd3-force';
-import Search from '../DashboardElements/Search';
-import InformationPanel from '../DashboardElements/InformationPanel/InformationPanel';
+import Search from '../../modules/search';
 import Loader from '../DashboardElements/Loader/Loader';
-import { getNodeColor } from '@/utils/helpers';
+import { centerGraph, getNodeColor } from '@/utils/helpers';
 import memoizeOne from 'memoize-one';
+import Interactions from '../DashboardElements/Interactions/Interactions';
+import GraphLegend from '../DashboardElements/GraphLegend/GraphLegend';
+import GraphInfoPanel from '../DashboardElements/GraphInfoPanel';
 
 type Props = {
     data: any
@@ -29,6 +31,7 @@ const LinkAnalysisVisualization = ({ data, graphLoading, setGraphLoading }: Prop
     const [highlightLinks, setHighlightLinks] = useState<Set<string>>(new Set());
     const [lastClickTime, setLastClickTime] = useState(0);
     const [openSidebar, setOpenSidebar] = useState<boolean>(true)
+
 
 
 
@@ -172,13 +175,6 @@ const LinkAnalysisVisualization = ({ data, graphLoading, setGraphLoading }: Prop
         return highlightLinks.has(link) ? 0.01 : 0.002;
     };
 
-
-    const centerGraph = () => {
-        if (fgRef.current) {
-            fgRef.current.zoomToFit()
-        }
-    };
-
     const zoomIn = () => {
         if (fgRef.current) {
             fgRef.current.zoom(fgRef.current.zoom() * 1.1, 500);
@@ -286,88 +282,9 @@ const LinkAnalysisVisualization = ({ data, graphLoading, setGraphLoading }: Prop
                 }}
                 onBackgroundClick={() => setSelectedNode(null)}
             />
-            <div className='absolute top-4 flex flex-col gap-1'>
-                {/* <RealignNodes graphData={graphData} setGraphData={setGraphData} /> */}
-                <div className=' bg-white rounded-md hover:shadow-sm p-2 border-2 transition-all duration-200 cursor-pointer' onClick={() => {
-                    if (graphData.nodes.length > 0) {
-                        centerGraph();
-                    }
-                }}>
-                    <SquareSquare />
-                </div>
-                <div className=' bg-white rounded-md hover:shadow-sm p-2 border-2 transition-all duration-200 cursor-pointer' onClick={zoomIn}>
-                    <ZoomIn />
-                </div>
-                <div className=' bg-white rounded-md hover:shadow-sm p-2 border-2 transition-all duration-200 cursor-pointer' onClick={zoomOut}>
-                    <ZoomOut />
-                </div>
-                {/* <div className=' bg-white rounded-md hover:shadow-sm p-2 border-2 transition-all duration-200 cursor-pointer'>
-                    <Home />
-                </div> */}
-            </div>
-            <div className='absolute left-10 bottom-10 bg-white p-2 rounded text-xs'>
-                <p className='font-semibold'>Left Click: <span className='font-normal'>
-                    Show node information</span></p>
-                <p className='font-semibold'>Note: <span className='font-normal'>
-                    Node sizes indicate their level of importance.</span></p>
-            </div>
-            <div className='flex border'>
-                <div className='absolute right-5 top-5 p-2 bg-white rounded border hover:cursor-pointer' onClick={handleSidebarOpen}>
-                    {openSidebar ?
-                        <PanelRightOpen />
-                        :
-                        <PanelLeftOpen />
-                    }
-                </div>
-                <div
-                    className={`absolute right-2 p-2 top-16 w-[20rem] bg-white h-[25rem] rounded border shadow-md ${openSidebar ? "" : "pointer-events-none"} transition-all duration-300 scrollbar ${openSidebar
-                        ? 'translate-x-[-10px] opacity-100'
-                        : 'translate-x-0 opacity-0'
-                        }`}
-                >
-                    {openSidebar && (
-                        <div className='flex flex-col gap-2 max-h-full p-2 overflow-auto scrollbar'>
-                            {selectedNode ? <InformationPanel node={selectedNode} properties={selectedNode?.properties} title={selectedNode?.label} />
-                                :
-                                <>
-                                    <div>
-                                        <h1 className='text-xl mb-1'>Nodes <span>({graphData.nodes.length})</span></h1>
-                                        <div className='flex flex-wrap gap-2'>
-                                            {
-                                                [...new Set(graphData.nodes.map(node => node.label))].map((label, index) => (
-                                                    <span
-                                                        key={index}
-                                                        style={{ backgroundColor: getNodeColor({ label: label }) }}
-                                                        className="text-white hover:bg-slate-300 font-medium w-fit px-2.5 py-1 transition-all duration-300 hover:shadow-sm rounded-full hover:cursor-pointer hover:text-slate-900"
-                                                    >
-                                                        {label}
-                                                    </span>
-                                                ))
-                                            }
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <h1 className='text-xl mb-2 '>Relationships <span>({graphData.links.length})</span></h1>
-                                        <div className='flex flex-wrap gap-2'>
-                                            {
-                                                [...new Set(graphData.links.map(link => link.type))].map((type, index) => (
-                                                    <span
-                                                        key={index}
-                                                        className="bg-slate-200 text-slate-700 hover:bg-slate-300 font-medium w-fit px-2.5 py-1 transition-all duration-300 hover:shadow-sm rounded-full hover:cursor-pointer hover:text-slate-900"
-                                                    >
-                                                        {type}
-                                                    </span>
-                                                ))
-                                            }
-                                        </div>
-                                    </div>
-                                </>
-
-                            }
-                        </div>
-                    )}
-                </div>
-            </div>
+            <Interactions graphData={graphData} fgRef={fgRef} zoomIn={zoomIn} zoomOut={zoomOut} />
+            <GraphLegend />
+            <GraphInfoPanel graphData={graphData} handleSidebarOpen={handleSidebarOpen} openSidebar={openSidebar} selectedNode={selectedNode} />
         </div >
     );
 };

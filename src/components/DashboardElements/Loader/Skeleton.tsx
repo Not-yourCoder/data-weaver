@@ -11,7 +11,6 @@ const SkeletonLoader = (props: Props) => {
         return widths;
     }
 
-    // Generate an array of 5 random widths, one for each Skeleton
     const randomWidths = getRandomWidths(18);
 
     return (
