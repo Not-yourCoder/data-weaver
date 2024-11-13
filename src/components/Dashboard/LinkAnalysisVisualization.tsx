@@ -28,7 +28,7 @@ const LinkAnalysisVisualization = ({ data, graphLoading, setGraphLoading }: Prop
     const [highlightNodes, setHighlightNodes] = useState<Set<string>>(new Set());
     const [highlightLinks, setHighlightLinks] = useState<Set<string>>(new Set());
     const [lastClickTime, setLastClickTime] = useState(0);
-    const [openSidebar, setOpenSidebar] = useState<boolean>(false)
+    const [openSidebar, setOpenSidebar] = useState<boolean>(true)
 
 
 
@@ -45,7 +45,6 @@ const LinkAnalysisVisualization = ({ data, graphLoading, setGraphLoading }: Prop
         if (data) {
             setGraphData(data);
         }
-        setOpenSidebar(false)
     }, [data]);
 
     useEffect(() => {
@@ -321,49 +320,52 @@ const LinkAnalysisVisualization = ({ data, graphLoading, setGraphLoading }: Prop
                     }
                 </div>
                 <div
-                    className={`absolute right-2 p-4 top-16 w-3/12 bg-white h-[25rem] rounded border shadow-md ${openSidebar ? "" : "pointer-events-none"} transition-all duration-300 scrollbar ${openSidebar
+                    className={`absolute right-2 p-2 top-16 w-[20rem] bg-white h-[25rem] rounded border shadow-md ${openSidebar ? "" : "pointer-events-none"} transition-all duration-300 scrollbar ${openSidebar
                         ? 'translate-x-[-10px] opacity-100'
                         : 'translate-x-0 opacity-0'
                         }`}
                 >
-                    {selectedNode ? (
-                        <InformationPanel node={selectedNode} properties={selectedNode.properties} title={selectedNode.label} />
-                    ) : (
+                    {openSidebar && (
                         <div className='flex flex-col gap-2 max-h-full p-2 overflow-auto scrollbar'>
-                            <div>
-                                <h1 className='text-xl mb-1'>Nodes <span>({graphData.nodes.length})</span></h1>
-                                <div className='flex flex-wrap gap-2'>
-                                    {
-                                        [...new Set(graphData.nodes.map(node => node.label))].map((label, index) => (
-                                            <span
-                                                key={index}
-                                                style={{ backgroundColor: getNodeColor({ label: label }) }}
-                                                className="text-white hover:bg-slate-300 font-medium w-fit px-2.5 py-1 transition-all duration-300 hover:shadow-sm rounded-full hover:cursor-pointer hover:text-slate-900"
-                                            >
-                                                {label}
-                                            </span>
-                                        ))
-                                    }
-                                </div>
-                            </div>
-                            <div>
-                                <h1 className='text-xl mb-2 '>Relationships <span>({graphData.links.length})</span></h1>
-                                <div className='flex flex-wrap gap-2'>
-                                    {
-                                        [...new Set(graphData.links.map(link => link.type))].map((type, index) => (
-                                            <span
-                                                key={index}
-                                                className="bg-slate-200 text-slate-700 hover:bg-slate-300 font-medium w-fit px-2.5 py-1 transition-all duration-300 hover:shadow-sm rounded-full hover:cursor-pointer hover:text-slate-900"
-                                            >
-                                                {type}
-                                            </span>
-                                        ))
-                                    }
-                                </div>
-                            </div>
+                            {selectedNode ? <InformationPanel node={selectedNode} properties={selectedNode?.properties} title={selectedNode?.label} />
+                                :
+                                <>
+                                    <div>
+                                        <h1 className='text-xl mb-1'>Nodes <span>({graphData.nodes.length})</span></h1>
+                                        <div className='flex flex-wrap gap-2'>
+                                            {
+                                                [...new Set(graphData.nodes.map(node => node.label))].map((label, index) => (
+                                                    <span
+                                                        key={index}
+                                                        style={{ backgroundColor: getNodeColor({ label: label }) }}
+                                                        className="text-white hover:bg-slate-300 font-medium w-fit px-2.5 py-1 transition-all duration-300 hover:shadow-sm rounded-full hover:cursor-pointer hover:text-slate-900"
+                                                    >
+                                                        {label}
+                                                    </span>
+                                                ))
+                                            }
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h1 className='text-xl mb-2 '>Relationships <span>({graphData.links.length})</span></h1>
+                                        <div className='flex flex-wrap gap-2'>
+                                            {
+                                                [...new Set(graphData.links.map(link => link.type))].map((type, index) => (
+                                                    <span
+                                                        key={index}
+                                                        className="bg-slate-200 text-slate-700 hover:bg-slate-300 font-medium w-fit px-2.5 py-1 transition-all duration-300 hover:shadow-sm rounded-full hover:cursor-pointer hover:text-slate-900"
+                                                    >
+                                                        {type}
+                                                    </span>
+                                                ))
+                                            }
+                                        </div>
+                                    </div>
+                                </>
+
+                            }
                         </div>
-                    )
-                    }
+                    )}
                 </div>
             </div>
         </div >
